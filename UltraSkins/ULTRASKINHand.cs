@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 namespace UltraSkins
 {
-	[UKPlugin("ULTRASKINS", "1.2.0", "This mod lets you replace the weapon and arm textures to your liking. \n please read the included readme file inside of the ULTRASKINS folder", true, true)]
+	[UKPlugin("ULTRASKINS", "1.2.1", "This mod lets you replace the weapon and arm textures to your liking. \n please read the included readme file inside of the ULTRASKINS folder", true, true)]
 	public class ULTRASKINHand : UKMod
 	{
 
@@ -16,7 +16,6 @@ namespace UltraSkins
 		public static string[] autoSwapTextures = File.ReadAllLines(listPath);
 
 		public static Dictionary<string, Texture2D> autoSwapCache = new Dictionary<string, Texture2D>();
-		public List<TextureOverWatch> TOWs = new List<TextureOverWatch>();
 
 		public static bool swapped;
 
@@ -64,17 +63,17 @@ namespace UltraSkins
 		{
 			foreach (ShopGearChecker shopGearChecker in Resources.FindObjectsOfTypeAll<ShopGearChecker>())
 			{
-				Transform transform = Instantiate(shopGearChecker.transform.GetChild(3), shopGearChecker.transform);
-				transform.localPosition = new Vector3(-180f, -85f, -45f);
-				transform.localScale = new Vector3(1f, 1f, 1f);
-				GameObject gameObject = Instantiate(new GameObject(), transform.transform);
-				gameObject.SetActive(false);
-				SkinEventHandler skinEventHandler = transform.gameObject.AddComponent<SkinEventHandler>();
+				Transform button = Instantiate(shopGearChecker.transform.GetChild(3), shopGearChecker.transform);
+				button.localPosition = new Vector3(-180f, -85f, -45f);
+				button.localScale = new Vector3(1f, 1f, 1f);
+				GameObject AGO = Instantiate(new GameObject(), button.transform);
+				AGO.SetActive(false);
+				SkinEventHandler skinEventHandler = button.gameObject.AddComponent<SkinEventHandler>();
 				skinEventHandler.UKSH = transform.GetComponent<ULTRASKINHand>();
-				skinEventHandler.Activator = gameObject;
-				transform.GetComponent<ShopButton>().toActivate = new GameObject[] { gameObject };
-				transform.GetComponent<ShopButton>().toDeactivate = new GameObject[0];
-				transform.GetComponentInChildren<Text>().text = "RELOAD SKINS";
+				skinEventHandler.Activator = AGO;
+				button.GetComponent<ShopButton>().toActivate = new GameObject[] { AGO };
+				button.GetComponent<ShopButton>().toDeactivate = new GameObject[0];
+				button.GetComponentInChildren<Text>().text = "RELOAD SKINS";
 			}
 		}
 
@@ -110,12 +109,7 @@ namespace UltraSkins
 					}
 					else if (!renderer.GetComponent<TextureOverWatch>())
 					{
-						renderer.gameObject.AddComponent<TextureOverWatch>().enabled = false;
-					}
-
-					if (renderer.GetComponent<TextureOverWatch>() && !TOWs.Contains(renderer.GetComponent<TextureOverWatch>()))
-					{
-						TOWs.Add(renderer.GetComponent<TextureOverWatch>());
+						renderer.gameObject.AddComponent<TextureOverWatch>().enabled = true;
 					}
 				}
 			}
@@ -126,13 +120,6 @@ namespace UltraSkins
 			autoSwapTextures = File.ReadAllLines(listPath);
 			autoSwapCache.Clear();
 			bool failed = false;
-			for (int i = 0; i < TOWs.Count; i++)
-			{
-				if (TOWs[i])
-				{
-					TOWs[i].enabled = true;
-				}
-			}
 			foreach (string text in autoSwapTextures)
 			{
 				if (text != autoSwapTextures[0] && text != "\n" && text != "")

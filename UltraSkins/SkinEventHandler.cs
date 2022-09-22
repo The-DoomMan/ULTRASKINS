@@ -9,7 +9,7 @@ namespace UltraSkins
 
 		private void Update()
 		{
-			if (Activator.activeSelf)
+			if (Activator != null && Activator.activeSelf)
 			{
 				Activator.SetActive(false);
 				string message = UKSH.ReloadTextures(false);

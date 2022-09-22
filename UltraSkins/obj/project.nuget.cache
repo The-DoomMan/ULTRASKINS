@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Vlbm4eGw8gW/eUqXFRqD745R4D2VyBuSe7EAXRI2Uu+156L26P/Sqywg/vwtkXuqfP2lioyVFp2n83jZe1GLqw==",
+  "dgSpecHash": "tdHY3K7HQGslml5QHr/rohWPVPxSpTrZ85f9kSnwRIhIV0NV3qPuCrsDIa7UwunyYV0UtF9nrJ0f8GEyfGZWvw==",
   "success": true,
-  "projectFilePath": "E:\\ultrakill mods\\ULTRASKINS\\UltraSkins\\UltraSkins.csproj",
+  "projectFilePath": "E:\\ultrakill mods\\ULTRASKINS-2\\UltraSkins\\UltraSkins.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\acer\\.nuget\\packages\\bepinex.analyzers\\1.0.8\\bepinex.analyzers.1.0.8.nupkg.sha512",
     "C:\\Users\\acer\\.nuget\\packages\\bepinex.baselib\\5.4.20\\bepinex.baselib.5.4.20.nupkg.sha512",

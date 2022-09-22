@@ -24,7 +24,11 @@ namespace UltraSkins
 				}
 				cachedMaterials = renderer.materials;
 			}
-			transform.GetComponent<TextureOverWatch>().enabled = false;
+		}
+
+		private void OnDisable()
+        {
+			transform.GetComponent<TextureOverWatch>().enabled = true;
 		}
 	}
 }
