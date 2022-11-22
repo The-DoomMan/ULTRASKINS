@@ -9,7 +9,7 @@ namespace UltraSkins
 		public Renderer renderer;
 		public bool forceswap;
 
-		private void Update()
+		public void UpdateMaterials(GameObject weaponsource = null)
 		{
 			if (!renderer)
 			{
@@ -23,12 +23,8 @@ namespace UltraSkins
 					ULTRASKINHand.PerformTheSwap(materials[i], forceswap);
 				}
 				cachedMaterials = renderer.materials;
-			}
-		}
-
-		private void OnDisable()
-        {
-			transform.GetComponent<TextureOverWatch>().enabled = true;
+                transform.GetComponent<TextureOverWatch>().enabled = false;
+            }
 		}
 	}
 }
