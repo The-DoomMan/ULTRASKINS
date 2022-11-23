@@ -18,11 +18,14 @@ namespace UltraSkins
 			{
 				Activator.SetActive(false);
 				string message = UKSH.ReloadTextures(false, path);
-				foreach (TextureOverWatch TOW in Resources.FindObjectsOfTypeAll<TextureOverWatch>())
+				UKMod.SetPersistentModData("SkinsFolder", pname, "Tony.UltraSkins");
+				TextureOverWatch[] TOWS = GameObject.FindWithTag("MainCamera").GetComponentsInChildren<TextureOverWatch>(true);
+				foreach (TextureOverWatch TOW in TOWS)
 				{
-					TOW.enabled = true;
-                    TOW.forceswap = true;
-                    TOW.UpdateMaterials(null);
+					if (TOW && TOW.gameObject)
+					{
+						TOW.enabled = true;
+                    }
 				}
                 MonoSingleton<HudMessageReceiver>.Instance.SendHudMessage(message, "", "", 0, false);
 			}

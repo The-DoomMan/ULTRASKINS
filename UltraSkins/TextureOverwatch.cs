@@ -9,12 +9,18 @@ namespace UltraSkins
 		public Renderer renderer;
 		public bool forceswap;
 
-		public void UpdateMaterials(GameObject weaponsource = null)
+		void OnEnable()
 		{
-			if (!renderer)
-			{
-				renderer = GetComponent<Renderer>();
-			}
+            if (!renderer)
+            {
+                renderer = GetComponent<Renderer>();
+            }
+            if (renderer.materials != cachedMaterials)
+			UpdateMaterials();
+		}
+
+		public void UpdateMaterials()
+		{
 			if (renderer && renderer.materials != cachedMaterials)
 			{
 				Material[] materials = renderer.materials;
@@ -23,8 +29,8 @@ namespace UltraSkins
 					ULTRASKINHand.PerformTheSwap(materials[i], forceswap);
 				}
 				cachedMaterials = renderer.materials;
-                transform.GetComponent<TextureOverWatch>().enabled = false;
             }
+			transform.GetComponent<TextureOverWatch>().enabled = false;
 		}
-	}
+    }
 }
