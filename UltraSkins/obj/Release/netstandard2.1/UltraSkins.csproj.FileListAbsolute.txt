@@ -101,8 +101,6 @@ D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\Unity.ProBuil
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\Unity.ProBuilder.KdTree.dll
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\BepInEx.Harmony.xml
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.csproj.AssemblyReference.cache
-D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.Resource1.resources
-D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.csproj.GenerateResource.cache
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\PluginInfo.cs
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.GeneratedMSBuildEditorConfig.editorconfig
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.AssemblyInfoInputs.cache
