@@ -26,7 +26,7 @@ namespace UltraSkins
 				Material[] materials = renderer.materials;
 				for (int i = 0; i < materials.Length; i++)
 				{
-					ULTRASKINHand.PerformTheSwap(materials[i], forceswap);
+					ULTRASKINHand.PerformTheSwap(materials[i], forceswap, transform.GetComponent<TextureOverWatch>());
 				}
 				cachedMaterials = renderer.materials;
             }
