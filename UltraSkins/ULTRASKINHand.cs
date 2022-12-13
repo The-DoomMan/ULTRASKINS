@@ -9,7 +9,9 @@ using UnityEngine.UI;
 
 namespace UltraSkins
 {
-	[UKPlugin("ULTRASKINS", "1.4.2", "This mod allows you to swap the textures and colors of your arsenal to your liking. \n Please read the included readme file inside of the ULTRASKINS folder.", true, true)]
+	[UKPlugin("ULTRASKINS", "1.5.0", 
+        "This mod allows you to swap the textures and colors of your arsenal to your liking. \n Please read the included readme file inside of the ULTRASKINS folder."
+        , true, true)]
 	public class ULTRASKINHand : UKMod
 	{
 
@@ -34,7 +36,7 @@ namespace UltraSkins
 
         [HarmonyPatch]
         public class HarmonyGunPatcher
-		{
+        {
             [HarmonyPatch(typeof(GunControl), "SwitchWeapon", new Type[] { typeof(int), typeof(List<GameObject>), typeof(bool), typeof(bool) })]
             [HarmonyPostfix]
             public static void SwitchWeaponPost(GunControl __instance, int target, List<GameObject> slot, bool lastUsed = false, bool scrolled = false)
@@ -48,7 +50,20 @@ namespace UltraSkins
             [HarmonyPostfix]
             public static void WeaponYesPost(GunControl __instance)
             {
-                TextureOverWatch[] TOWS = __instance.currentWeapon.GetComponentsInChildren<TextureOverWatch>(true);
+                if (!__instance.noWeapons)
+                {
+                    TextureOverWatch[] TOWS = __instance.currentWeapon.GetComponentsInChildren<TextureOverWatch>(true);
+                    ReloadTextureOverWatch(TOWS);
+                }
+            }
+
+
+            [HarmonyPatch(typeof(GunControl), "UpdateWeaponList", new Type[] {typeof(bool)})]
+            [HarmonyPostfix]
+            public static void UpdateWeaponListPost(GunControl __instance, bool firstTime = false)
+            {
+                InitOWGameObjects(true);
+                TextureOverWatch[] TOWS = CameraController.Instance.gameObject.GetComponentsInChildren<TextureOverWatch>(true);
                 ReloadTextureOverWatch(TOWS);
             }
 
@@ -56,9 +71,11 @@ namespace UltraSkins
             [HarmonyPostfix]
             public static void YesFistPost(FistControl __instance)
             {
-
-                TextureOverWatch[] TOWS = __instance.currentArmObject.GetComponentsInChildren<TextureOverWatch>(true);
-                ReloadTextureOverWatch(TOWS);
+                if (__instance.currentArmObject)
+                {
+                    TextureOverWatch[] TOWS = __instance.currentArmObject.GetComponentsInChildren<TextureOverWatch>(true);
+                    ReloadTextureOverWatch(TOWS);
+                }
             }
 
             [HarmonyPatch(typeof(FistControl), "ArmChange", new Type[] { typeof(int) })]
@@ -67,6 +84,55 @@ namespace UltraSkins
             {
                 TextureOverWatch[] TOWS = __instance.currentArmObject.GetComponentsInChildren<TextureOverWatch>(true);
 				ReloadTextureOverWatch(TOWS);
+            }
+
+            [HarmonyPatch(typeof(FistControl), "ResetFists")]
+            [HarmonyPostfix]
+            public static void ResetFistsPost(FistControl __instance)
+            {
+                InitOWGameObjects(false);
+                TextureOverWatch[] TOWS = __instance.currentArmObject.GetComponentsInChildren<TextureOverWatch>(true);
+                ReloadTextureOverWatch(TOWS);
+            }
+
+
+            [HarmonyPatch(typeof(DualWieldPickup), "PickedUp")]
+            [HarmonyPostfix]
+            public static void DPickedupPost(DualWieldPickup __instance)
+            {
+                if (GunControl.Instance)
+                {
+                    if (PlayerTracker.Instance.playerType != PlayerType.Platformer)
+                    {
+                        DualWield[] DWs = GunControl.Instance.GetComponentsInChildren<DualWield>(true);
+                        foreach (DualWield DW in DWs)
+                        {
+                            if(DW)
+                            {
+                                Renderer[] renderers = DW.GetComponentsInChildren<Renderer>(true);
+                                foreach(Renderer renderer in renderers)
+                                {
+                                    if(renderer && renderer.gameObject.layer == 13 && !renderer.gameObject.GetComponent<ParticleSystemRenderer>() && !renderer.gameObject.GetComponent<CanvasRenderer>())
+                                    {
+                                        if(!renderer.gameObject.GetComponent<TextureOverWatch>())
+                                        {
+                                            TextureOverWatch TOW = renderer.gameObject.AddComponent<TextureOverWatch>();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+
+            [HarmonyPatch(typeof(DualWield), "UpdateWeapon")]
+            [HarmonyPostfix]
+            public static void DUpdateWPost(DualWield __instance)
+            {
+                TextureOverWatch[] TOWS = __instance.GetComponentsInChildren<TextureOverWatch>(true);
+                ReloadTextureOverWatch(TOWS);
             }
 
             [HarmonyPatch(typeof(PlayerTracker), "ChangeToFPS")]
@@ -204,6 +270,121 @@ namespace UltraSkins
             }
         }
 
+
+        public static Texture ResolveTheTextureProperty(Material mat, string property)
+        {
+            string textureToResolve = "";
+            if (mat)
+            {
+                switch (property)
+                {
+                    case "_MainTex":
+                        textureToResolve = mat.mainTexture.name;
+                        break;
+                    case "_EmissiveTex":
+                        switch (mat.mainTexture.name)
+                        {
+                            case "T_NailgunNew_NoGlow":
+                                textureToResolve = "T_Nailgun_New_Glow";
+                                break;
+                            case "T_RocketLauncher_Desaturated":
+                                textureToResolve = "T_RocketLauncher_Emissive";
+                                break;
+                            default:
+                                textureToResolve = mat.mainTexture.name + "_Emissive";
+                                break;
+                        }
+                        break;
+                    case "_IDTex":
+                        switch (mat.mainTexture.name)
+                        {
+                            case "T_RocketLauncher_Desaturated":
+                                textureToResolve = "T_RocketLauncher_ID";
+                                break;
+                            case "T_NailgunNew_NoGlow":
+                                textureToResolve = "T_NailgunNew_ID";
+                                break;
+                            default:
+                                textureToResolve = mat.mainTexture.name + "_ID";
+                                break;
+                        }
+                        break;
+                    default:
+                        textureToResolve = "";
+                        break;
+                }
+                if (textureToResolve != "" && autoSwapCache.ContainsKey(textureToResolve))
+                    return autoSwapCache[textureToResolve];
+            }
+            return mat.GetTexture(property);
+        }
+
+        public static void PerformTheSwap(Material mat, bool forceswap = false, TextureOverWatch TOW = null)
+        {
+            if (mat && (!mat.name.StartsWith("Swapped_") || forceswap))
+            {
+                if (!mat.name.StartsWith("Swapped_"))
+                {
+                    mat.name = "Swapped_" + mat.name;
+                }
+                if (mat.shader.name == "psx/vertexlit/vertexlit-customcolors")
+                {
+                    mat.shader = Shader.Find("psx/vertexlit/vertexlit-customcolors-emissive");
+                }
+                else if (mat.shader.name == "psx/vertexlit/vertexlit")
+                {
+                    mat.shader = Shader.Find("psx/vertexlit/emissive");
+                }
+                forceswap = false;
+                string[] textureProperties = mat.GetTexturePropertyNames();
+                foreach (string property in textureProperties)
+                {
+                    Texture resolvedTexture = ULTRASKINHand.ResolveTheTextureProperty(mat, property);
+                    if (resolvedTexture && resolvedTexture != null && mat.HasProperty(property) && mat.GetTexture(property) != resolvedTexture)
+                    {
+                        mat.SetTexture(property, resolvedTexture);
+                    }
+                    if (TOW != null && mat.HasProperty("_EmissiveColor"))
+                    {
+
+                        Color VariantColor = new Color(0, 0, 0, 0);
+                        if (TOW.GetComponentInParent<WeaponIcon>())
+                        {
+                            WeaponIcon WPI = TOW.GetComponentInParent<WeaponIcon>();
+                            VariantColor = new Color(ColorBlindSettings.Instance.variationColors[WPI.variationColor].r,
+                                ColorBlindSettings.Instance.variationColors[WPI.variationColor].g,
+                                ColorBlindSettings.Instance.variationColors[WPI.variationColor].b, 1f);
+                        }
+                        else if (TOW.GetComponentInParent<Punch>())
+                        {
+                            Punch P = TOW.GetComponentInParent<Punch>();
+                            switch (P.type)
+                            {
+                                case FistType.Heavy:
+                                    VariantColor = new Color(ColorBlindSettings.Instance.variationColors[2].r,
+                                ColorBlindSettings.Instance.variationColors[2].g,
+                                ColorBlindSettings.Instance.variationColors[2].b, 1f);
+                                    break;
+                                case FistType.Standard:
+                                    VariantColor = new Color(ColorBlindSettings.Instance.variationColors[0].r,
+                               ColorBlindSettings.Instance.variationColors[0].g,
+                               ColorBlindSettings.Instance.variationColors[0].b, 1f);
+                                    break;
+                            }
+                        }
+                        else if (TOW.GetComponentInParent<HookArm>())
+                        {
+                            VariantColor = new Color(ColorBlindSettings.Instance.variationColors[1].r,
+                                ColorBlindSettings.Instance.variationColors[1].g,
+                                ColorBlindSettings.Instance.variationColors[1].b, 1f);
+                        }
+                        mat.SetColor("_EmissiveColor", VariantColor);
+                    }
+                }
+            }
+        }
+
+
         private void Update()
 		{
 			if (!swapped)
@@ -217,89 +398,11 @@ namespace UltraSkins
 			}
         }
 
-
-        public static Texture ResolveTheTextureProperty(Material mat, string property)
+        public static bool CheckTextureInCache(string name)
         {
-			string textureToResolve = "";
-			if (mat)
-			{
-				//Debug.Log("Switching:" + mat.name + " " + property);
-				switch (property)
-				{
-					case "_MainTex":
-						textureToResolve = mat.mainTexture.name;
-                       		break;
-					case "_EmissiveTex":
-						switch (mat.mainTexture.name)
-                        {
-                            case "T_NailgunNew_NoGlow":
-                                textureToResolve = "T_Nailgun_New_Glow";
-                                break;
-                            default:
-                                textureToResolve = mat.mainTexture.name + "_Emissive";
-                                break;
-                        }
-						break;
-					case "_IDTex":
-						switch(mat.mainTexture.name)
-						{
-							case "T_RocketLauncher_Desaturated":
-								textureToResolve = "T_RocketLauncher_ID";
-								break;
-							case "T_NailgunNew_NoGlow":
-								textureToResolve = "T_NailgunNew_ID";
-								break;
-							default:
-								textureToResolve = mat.mainTexture.name + "_ID";
-								break;
-						}
-							break;
-						default:
-                            textureToResolve = "";
-							break;
-				}
-				if (textureToResolve != "" && autoSwapCache.ContainsKey(textureToResolve))
-                    //Debug.Log("Switched:" + mat.name + "." + property + ", tex name: " + textureToResolve);
-                    return autoSwapCache[textureToResolve];
-            }
-            //Debug.Log("failed Switching:" + mat.name + "." + property + ", attempted tex name: " + attemptedresolve + " , Proper texture: " + mat.GetTexture(property).name);
-            return mat.GetTexture(property);
-        }
-
-		public static void PerformTheSwap(Material mat, bool forceswap = false, TextureOverWatch TOW = null)
-		{
-			if (mat && (!mat.name.StartsWith("Swapped_") || forceswap))
-			{
-				if (!mat.name.StartsWith("Swapped_"))
-				{
-						mat.name = "Swapped_" + mat.name;
-				}
-				forceswap = false;
-                /*Debug.Log("============Start============");
-				int[] TextProperties = mat.GetTexturePropertyNameIDs();
-				for(int s = 0; s < TextProperties.Length; s++)
-				{
-					Debug.Log("Material: " + mat.name + ", Porperty: " + mat.GetTexturePropertyNames()[s] + ", ID :" + TextProperties[s]);
-				}
-                Debug.Log("=============End=============");*/
-                string[] textureProperties = mat.GetTexturePropertyNames();
-				foreach (string property in textureProperties)
-				{
-					Texture resolvedTexture = ULTRASKINHand.ResolveTheTextureProperty(mat, property);
-					if (resolvedTexture && resolvedTexture != null && mat.GetTexture(property) != resolvedTexture)
-					{
-						mat.SetTexture(property, resolvedTexture);
-					}
-					if(TOW != null && mat.HasProperty("_EmissiveColor"))
-					{
-                        WeaponIcon WPI = TOW.GetComponentInParent<WeaponIcon>();
-                        Color VariantColor = new Color(ColorBlindSettings.Instance.variationColors[WPI.variationColor].r,
-                            ColorBlindSettings.Instance.variationColors[WPI.variationColor].g,
-                            ColorBlindSettings.Instance.variationColors[WPI.variationColor].b, 1f);
-						mat.SetColor("_EmissiveColor", VariantColor);
-                    }
-                }
-            }
+            if (autoSwapCache.ContainsKey(name))
+                return true;
+            return false;
         }
 
 		public string ReloadTextures(bool firsttime = false, string path = "")
@@ -316,7 +419,7 @@ namespace UltraSkins
 			return LoadTextures(path);
 		}
 
-		public void InitOWGameObjects(bool firsttime = false)
+		public static void InitOWGameObjects(bool firsttime = false)
 		{
 			GameObject cam = GameObject.FindGameObjectWithTag("MainCamera");
 			foreach (Renderer renderer in cam.GetComponentsInChildren<Renderer>(true))
@@ -359,7 +462,7 @@ namespace UltraSkins
 						if (file.Name == "Railgun_Main_AlphaGlow.png")
 						{
 							Texture2D texture2D2 = new Texture2D(2, 2);
-							byte[] data2 = File.ReadAllBytes(Path.Combine(file.DirectoryName, "Railgun_Main_Emission.png"));
+							byte[] data2 = File.ReadAllBytes(Path.Combine(file.DirectoryName, "Railgun_Main_Emissive.png"));
 							texture2D2.filterMode = FilterMode.Point;
 							texture2D2.LoadImage(data2);
 							texture2D2.Apply();

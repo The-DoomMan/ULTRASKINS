@@ -109,3 +109,13 @@ D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.cs
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.csproj.CopyComplete
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.dll
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\Assembly-CSharp.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\UnityEngine.UI.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\Unity.InputSystem.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\NavMeshComponents.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\Unity.TextMeshPro.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\UnityUIExtensions.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\NewBlood.LegacyInput.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\Unity.ProBuilder.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\Unity.ProBuilder.Poly2Tri.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\Unity.ProBuilder.KdTree.pdb
