@@ -9,7 +9,7 @@ using UnityEngine.UI;
 
 namespace UltraSkins
 {
-	[UKPlugin("ULTRASKINS", "1.5.0", 
+	[UKPlugin("ULTRASKINS", "1.5.1", 
         "This mod allows you to swap the textures and colors of your arsenal to your liking. \n Please read the included readme file inside of the ULTRASKINS folder."
         , true, true)]
 	public class ULTRASKINHand : UKMod
@@ -25,6 +25,7 @@ namespace UltraSkins
 		{
 			UKSHarmony = new Harmony("Tony.UltraSkins");
             UKSHarmony.PatchAll(typeof(HarmonyGunPatcher));
+            UKSHarmony.PatchAll(typeof(HarmonyProjectilePatcher));
             UKSHarmony.PatchAll();
 		}
 
@@ -155,6 +156,102 @@ namespace UltraSkins
             }
         }
 
+        [HarmonyPatch]
+        public class HarmonyProjectilePatcher
+        {
+           [HarmonyPatch(typeof(Nail), "Start")]
+           [HarmonyPostfix]
+           public static void NailPost(Nail __instance)
+           {
+               if(__instance.sawblade)
+                {
+                    AddTOWs(__instance.gameObject, false, true);
+                }
+
+           }
+
+            [HarmonyPatch(typeof(Magnet), "Start")]
+            [HarmonyPostfix]
+            public static void MagnetPost(Magnet __instance)
+            {
+                AddTOWs(__instance.transform.parent.gameObject, false, true);
+            }
+
+            [HarmonyPatch(typeof(Grenade), "Start")]
+            [HarmonyPostfix]
+            public static void GrenadePost(Grenade __instance)
+            {
+                AddTOWs(__instance.gameObject, false, true);
+            }
+
+            [HarmonyPatch(typeof(Coin), "Start")]
+            [HarmonyPostfix]
+            public static void coinPost(Coin __instance)
+            {
+                AddTOWs(__instance.gameObject, true);
+            }
+
+            public static void ReloadTextureOverWatch(TextureOverWatch[] TOWS)
+            {
+                foreach (TextureOverWatch TOW in TOWS)
+                {
+                    TOW.enabled = true;
+                }
+            }
+
+            public static void AddTOWs(GameObject gameobject, bool toself = true, bool tochildren = false , bool toparent = false, bool refresh = false)
+            {
+                if (toself)
+                {
+                    if (!gameobject.GetComponent<TextureOverWatch>())
+                    {
+                        gameobject.AddComponent<TextureOverWatch>();
+                    }
+                    else
+                    {
+                        gameobject.GetComponent<TextureOverWatch>().enabled = refresh;
+                    }
+                }
+                if (toparent)
+                {
+                    Renderer[] parentRenderers = gameobject.GetComponentsInParent<Renderer>();
+                    foreach (Renderer renderer in parentRenderers)
+                    {
+                        if (renderer != null && renderer.GetType() != typeof(ParticleSystemRenderer) && renderer.GetType() != typeof(CanvasRenderer) && renderer.GetType() != typeof(LineRenderer))
+                        {
+                            if (!renderer.GetComponent<TextureOverWatch>())
+                            {
+                                renderer.gameObject.AddComponent<TextureOverWatch>();
+                            }
+                            else
+                            {
+                                renderer.GetComponent<TextureOverWatch>().enabled = refresh;
+                            }
+                        }
+                    }
+                }
+                if (tochildren)
+                {
+                    Renderer[] childRenderers = gameobject.GetComponentsInChildren<Renderer>();
+                    foreach (Renderer renderer in childRenderers)
+                    {
+                        if (renderer != null && renderer.GetType() != typeof(ParticleSystemRenderer) && renderer.GetType() != typeof(CanvasRenderer) && renderer.GetType() != typeof(LineRenderer))
+                        {
+                            if (!renderer.GetComponent<TextureOverWatch>())
+                            {
+                                renderer.gameObject.AddComponent<TextureOverWatch>();
+                            }
+                            else
+                            {
+                                renderer.GetComponent<TextureOverWatch>().enabled = refresh;
+                            }
+                        }
+                    }
+                }
+            }
+
+        }
+
         private void Start()
         {
             SceneManager.sceneLoaded += SceneManagerOnsceneLoaded;
@@ -271,10 +368,10 @@ namespace UltraSkins
         }
 
 
-        public static Texture ResolveTheTextureProperty(Material mat, string property)
+        public static Texture ResolveTheTextureProperty(Material mat, string property, string propertyfallback = "_MainTex")
         {
             string textureToResolve = "";
-            if (mat)
+            if (mat && !mat.mainTexture.name.StartsWith("TNR_"))
             {
                 switch (property)
                 {
@@ -309,6 +406,12 @@ namespace UltraSkins
                                 break;
                         }
                         break;
+                    case "ROCKIT":
+                        textureToResolve = (mat.name.Contains("Swapped_AltarUnlitRed") && !mat.mainTexture.name.StartsWith("T_")) ? "skull2rocketbonus" : mat.mainTexture.name.Contains("T_Sakuya") ? "" : "skull2rocket";
+                        break;
+                    case "THROWITBACK":
+                        textureToResolve = "skull2 compressed";
+                        break;
                     default:
                         textureToResolve = "";
                         break;
@@ -316,10 +419,10 @@ namespace UltraSkins
                 if (textureToResolve != "" && autoSwapCache.ContainsKey(textureToResolve))
                     return autoSwapCache[textureToResolve];
             }
-            return mat.GetTexture(property);
+            return mat.GetTexture(propertyfallback);
         }
 
-        public static void PerformTheSwap(Material mat, bool forceswap = false, TextureOverWatch TOW = null)
+        public static void PerformTheSwap(Material mat, bool forceswap = false, TextureOverWatch TOW = null, string swapType = "weapon")
         {
             if (mat && (!mat.name.StartsWith("Swapped_") || forceswap))
             {
@@ -336,52 +439,88 @@ namespace UltraSkins
                     mat.shader = Shader.Find("psx/vertexlit/emissive");
                 }
                 forceswap = false;
-                string[] textureProperties = mat.GetTexturePropertyNames();
-                foreach (string property in textureProperties)
+                Texture resolvedTexture = new Texture();
+                if (swapType == "weapon")
                 {
-                    Texture resolvedTexture = ULTRASKINHand.ResolveTheTextureProperty(mat, property);
-                    if (resolvedTexture && resolvedTexture != null && mat.HasProperty(property) && mat.GetTexture(property) != resolvedTexture)
+                    string[] textureProperties = mat.GetTexturePropertyNames();
+                    foreach (string property in textureProperties)
                     {
-                        mat.SetTexture(property, resolvedTexture);
+                        resolvedTexture = ULTRASKINHand.ResolveTheTextureProperty(mat, property, property);
+                        if (resolvedTexture && resolvedTexture != null && mat.HasProperty(property) && mat.GetTexture(property) != resolvedTexture)
+                        {
+                            mat.SetTexture(property, resolvedTexture);
+                        }
+                        if (TOW != null && mat.HasProperty("_EmissiveColor"))
+                        {
+                            Color VariantColor = GetVarationColor(TOW);
+                            mat.SetColor("_EmissiveColor", VariantColor);
+                        }
                     }
-                    if (TOW != null && mat.HasProperty("_EmissiveColor"))
+                }
+                else if (swapType == "projectile")
+                {
+                    resolvedTexture = ULTRASKINHand.ResolveTheTextureProperty(mat, "_MainTex");
+                    if (resolvedTexture && resolvedTexture != null && mat.HasProperty("_MainTex") && mat.GetTexture("_MainTex") != resolvedTexture)
                     {
+                        mat.SetTexture("_MainTex", resolvedTexture);
 
-                        Color VariantColor = new Color(0, 0, 0, 0);
-                        if (TOW.GetComponentInParent<WeaponIcon>())
-                        {
-                            WeaponIcon WPI = TOW.GetComponentInParent<WeaponIcon>();
-                            VariantColor = new Color(ColorBlindSettings.Instance.variationColors[WPI.variationColor].r,
-                                ColorBlindSettings.Instance.variationColors[WPI.variationColor].g,
-                                ColorBlindSettings.Instance.variationColors[WPI.variationColor].b, 1f);
-                        }
-                        else if (TOW.GetComponentInParent<Punch>())
-                        {
-                            Punch P = TOW.GetComponentInParent<Punch>();
-                            switch (P.type)
-                            {
-                                case FistType.Heavy:
-                                    VariantColor = new Color(ColorBlindSettings.Instance.variationColors[2].r,
-                                ColorBlindSettings.Instance.variationColors[2].g,
-                                ColorBlindSettings.Instance.variationColors[2].b, 1f);
-                                    break;
-                                case FistType.Standard:
-                                    VariantColor = new Color(ColorBlindSettings.Instance.variationColors[0].r,
-                               ColorBlindSettings.Instance.variationColors[0].g,
-                               ColorBlindSettings.Instance.variationColors[0].b, 1f);
-                                    break;
-                            }
-                        }
-                        else if (TOW.GetComponentInParent<HookArm>())
-                        {
-                            VariantColor = new Color(ColorBlindSettings.Instance.variationColors[1].r,
-                                ColorBlindSettings.Instance.variationColors[1].g,
-                                ColorBlindSettings.Instance.variationColors[1].b, 1f);
-                        }
-                        mat.SetColor("_EmissiveColor", VariantColor);
+                    }
+                }
+                else if (swapType == "grenade")
+                {
+                    resolvedTexture = ULTRASKINHand.ResolveTheTextureProperty(mat, "THROWITBACK");
+                    if (resolvedTexture && resolvedTexture != null && mat.HasProperty("_MainTex") && mat.GetTexture("_MainTex") != resolvedTexture)
+                    {
+                        mat.SetTexture("_MainTex", resolvedTexture);
+
+                    }
+                }
+                else if (swapType == "rocket")
+                {
+                    resolvedTexture = ULTRASKINHand.ResolveTheTextureProperty(mat, "ROCKIT");
+                    if (resolvedTexture && resolvedTexture != null && mat.HasProperty("_MainTex") && mat.GetTexture("_MainTex") != resolvedTexture)
+                    {
+                        mat.SetTexture("_MainTex", resolvedTexture);
+
                     }
                 }
             }
+        }
+
+        public static Color GetVarationColor(TextureOverWatch TOW)
+        {
+            Color VariantColor = new Color(0, 0, 0, 0);
+            if (TOW.GetComponentInParent<WeaponIcon>())
+            {
+                WeaponIcon WPI = TOW.GetComponentInParent<WeaponIcon>();
+                VariantColor = new Color(ColorBlindSettings.Instance.variationColors[WPI.variationColor].r,
+                    ColorBlindSettings.Instance.variationColors[WPI.variationColor].g,
+                    ColorBlindSettings.Instance.variationColors[WPI.variationColor].b, 1f);
+            }
+            else if (TOW.GetComponentInParent<Punch>())
+            {
+                Punch P = TOW.GetComponentInParent<Punch>();
+                switch (P.type)
+                {
+                    case FistType.Heavy:
+                        VariantColor = new Color(ColorBlindSettings.Instance.variationColors[2].r,
+                    ColorBlindSettings.Instance.variationColors[2].g,
+                    ColorBlindSettings.Instance.variationColors[2].b, 1f);
+                        break;
+                    case FistType.Standard:
+                        VariantColor = new Color(ColorBlindSettings.Instance.variationColors[0].r,
+                   ColorBlindSettings.Instance.variationColors[0].g,
+                   ColorBlindSettings.Instance.variationColors[0].b, 1f);
+                        break;
+                }
+            }
+            else if (TOW.GetComponentInParent<HookArm>())
+            {
+                VariantColor = new Color(ColorBlindSettings.Instance.variationColors[1].r,
+                    ColorBlindSettings.Instance.variationColors[1].g,
+                    ColorBlindSettings.Instance.variationColors[1].b, 1f);
+            }
+            return VariantColor;
         }
 
 

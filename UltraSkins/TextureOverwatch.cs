@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace UltraSkins
 {
@@ -8,9 +10,18 @@ namespace UltraSkins
 		public Material[] cachedMaterials;
 		public Renderer renderer;
 		public bool forceswap;
+		string swapType = "weapon";
 
 		void OnEnable()
 		{
+            if (GetComponentInParent<Nail>() || GetComponent<Coin>())
+			{
+				swapType = "projectile";
+			}
+            if (GetComponentInParent<Grenade>())
+            {
+                swapType = GetComponentInParent<Grenade>().rocket ? "rocket": "grenade";
+            }
             if (!renderer)
             {
                 renderer = GetComponent<Renderer>();
@@ -21,12 +32,12 @@ namespace UltraSkins
 
 		public void UpdateMaterials()
 		{
-			if (renderer && renderer.materials != cachedMaterials)
+            if (renderer && renderer.materials != cachedMaterials)
 			{
 				Material[] materials = renderer.materials;
 				for (int i = 0; i < materials.Length; i++)
 				{
-					ULTRASKINHand.PerformTheSwap(materials[i], forceswap, transform.GetComponent<TextureOverWatch>());
+					ULTRASKINHand.PerformTheSwap(materials[i], forceswap, transform.GetComponent<TextureOverWatch>(), swapType);
 				}
 				cachedMaterials = renderer.materials;
             }
