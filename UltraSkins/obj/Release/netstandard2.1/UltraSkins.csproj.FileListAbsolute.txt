@@ -109,3 +109,5 @@ D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.cs
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.csproj.CopyComplete
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.dll
 D:\Ultrakill Mods\ULTRASKINS\UltraSkins\obj\Release\netstandard2.1\UltraSkins.pdb
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\pcon.unity.dll
+D:\Ultrakill Mods\ULTRASKINS\UltraSkins\bin\Release\netstandard2.1\endel.nativewebsocket.dll

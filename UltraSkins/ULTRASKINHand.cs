@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using HarmonyLib;
 using UMM;
 using UnityEngine;
@@ -9,7 +10,8 @@ using UnityEngine.UI;
 
 namespace UltraSkins
 {
-	[UKPlugin("ULTRASKINS", "1.5.1", 
+	[UKPlugin("Tony.UltraSkins",
+        "ULTRASKINS", "1.5.2", 
         "This mod allows you to swap the textures and colors of your arsenal to your liking. \n Please read the included readme file inside of the ULTRASKINS folder."
         , true, true)]
 	public class ULTRASKINHand : UKMod
@@ -20,9 +22,13 @@ namespace UltraSkins
 		public string serializedSet = "";
         public bool swapped = false;
         Harmony UKSHarmony;
+        AssetBundle bundle0;
+        static Shader CCE;
+        static Shader DE;
+        static Cubemap cubemap;
 
-		public override void OnModLoaded()
-		{
+        public override void OnModLoaded()
+        {
 			UKSHarmony = new Harmony("Tony.UltraSkins");
             UKSHarmony.PatchAll(typeof(HarmonyGunPatcher));
             UKSHarmony.PatchAll(typeof(HarmonyProjectilePatcher));
@@ -31,6 +37,7 @@ namespace UltraSkins
 
 		public override void OnModUnload()
 		{
+            bundle0 = null;
 			UKSHarmony.UnpatchSelf();
 			UKSHarmony = null;
 		}
@@ -260,7 +267,18 @@ namespace UltraSkins
 		private void SceneManagerOnsceneLoaded(Scene scene, LoadSceneMode mode)
 		{
 			swapped = false;
-			CreateSkinGUI();
+            AssetBundle[] elbundles = AssetBundle.GetAllLoadedAssetBundles().ToArray();
+            foreach (AssetBundle bundle in elbundles)
+            {
+                if (bundle.name == "bundle-0")
+                {
+                    CCE = bundle.LoadAsset<Shader>("Assets/Shaders/Special/ULTRAKILL-vertexlit-customcolors-emissive.shader");
+                    DE = bundle.LoadAsset<Shader>("Assets/Shaders/Main/ULTRAKILL-vertexlit-emissive.shader");
+                    cubemap = bundle.LoadAsset<Cubemap>("Assets/Textures/studio_06.exr");
+                    continue;
+                }
+            }
+            CreateSkinGUI();
 		}
 
         public void CreateSkinGUI()
@@ -371,7 +389,7 @@ namespace UltraSkins
         public static Texture ResolveTheTextureProperty(Material mat, string property, string propertyfallback = "_MainTex")
         {
             string textureToResolve = "";
-            if (mat && !mat.mainTexture.name.StartsWith("TNR_"))
+            if (mat && !mat.mainTexture.name.StartsWith("TNR_") && property != "_Cube")
             {
                 switch (property)
                 {
@@ -430,13 +448,13 @@ namespace UltraSkins
                 {
                     mat.name = "Swapped_" + mat.name;
                 }
-                if (mat.shader.name == "psx/vertexlit/vertexlit-customcolors")
+                if (mat.shader.name == "psx/vertexlit/vertexlit-customcolors" && CCE)
                 {
-                    mat.shader = Shader.Find("psx/vertexlit/vertexlit-customcolors-emissive");
+                    mat.shader = CCE;
                 }
-                else if (mat.shader.name == "psx/vertexlit/vertexlit")
+                else if (mat.shader.name == "psx/vertexlit/vertexlit" && DE)
                 {
-                    mat.shader = Shader.Find("psx/vertexlit/emissive");
+                    mat.shader = DE;
                 }
                 forceswap = false;
                 Texture resolvedTexture = new Texture();
@@ -554,6 +572,10 @@ namespace UltraSkins
             {
                 Path.Combine(modFolder, "OG Textures");
             }
+            if(path == "")
+            {
+                Path.Combine(modFolder, "OG Textures");
+            }
             InitOWGameObjects(firsttime);
 			return LoadTextures(path);
 		}
@@ -584,6 +606,8 @@ namespace UltraSkins
             autoSwapCache.Clear();
 			bool failed = false;
             DirectoryInfo dir = new DirectoryInfo(fpath);
+            if (!dir.Exists)
+                return "failed";
             FileInfo[] Files = dir.GetFiles("*.png");
 			if (Files.Length > 0)
 			{
