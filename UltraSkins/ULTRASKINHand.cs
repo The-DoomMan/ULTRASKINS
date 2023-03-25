@@ -419,6 +419,9 @@ namespace UltraSkins
                             case "T_NailgunNew_NoGlow":
                                 textureToResolve = "T_NailgunNew_ID";
                                 break;
+                            case "Railgun_Main_AlphaGlow":
+                                textureToResolve = "T_Railgun_ID";
+                                break;
                             default:
                                 textureToResolve = mat.mainTexture.name + "_ID";
                                 break;
