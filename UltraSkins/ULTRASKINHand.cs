@@ -13,7 +13,7 @@ using UnityEngine.UI;
 namespace UltraSkins
 {
 	[UKPlugin("Tony.UltraSkins",
-        "ULTRASKINS", "1.5.2", 
+        "ULTRASKINS", "1.6.0", 
         "This mod allows you to swap the textures and colors of your arsenal to your liking. \n Please read the included readme file inside of the ULTRASKINS folder."
         , true, true)]
 	public class ULTRASKINHand : UKMod
