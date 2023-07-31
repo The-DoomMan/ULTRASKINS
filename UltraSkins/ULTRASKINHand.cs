@@ -4,14 +4,16 @@ using System.IO;
 using System.Linq;
 using HarmonyLib;
 using UMM;
+using Unity.Audio;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace UltraSkins
 {
 	[UKPlugin("Tony.UltraSkins",
-        "ULTRASKINS", "1.5.2", 
+        "ULTRASKINS", "1.6.0", 
         "This mod allows you to swap the textures and colors of your arsenal to your liking. \n Please read the included readme file inside of the ULTRASKINS folder."
         , true, true)]
 	public class ULTRASKINHand : UKMod
@@ -45,11 +47,10 @@ namespace UltraSkins
         [HarmonyPatch]
         public class HarmonyGunPatcher
         {
-            [HarmonyPatch(typeof(GunControl), "SwitchWeapon", new Type[] { typeof(int), typeof(List<GameObject>), typeof(bool), typeof(bool) })]
+            [HarmonyPatch(typeof(GunControl), "SwitchWeapon", new Type[] { typeof(int), typeof(List<GameObject>), typeof(bool), typeof(bool), typeof(bool) })]
             [HarmonyPostfix]
-            public static void SwitchWeaponPost(GunControl __instance, int target, List<GameObject> slot, bool lastUsed = false, bool scrolled = false)
+            public static void SwitchWeaponPost(GunControl __instance, int target, List<GameObject> slot, bool lastUsedSlot = false, bool useRetainedVariation = false, bool scrolled = false)
             {
-
                 TextureOverWatch[] TOWS = __instance.currentWeapon.GetComponentsInChildren<TextureOverWatch>(true);
                 ReloadTextureOverWatch(TOWS);
             }
@@ -267,18 +268,13 @@ namespace UltraSkins
 		private void SceneManagerOnsceneLoaded(Scene scene, LoadSceneMode mode)
 		{
 			swapped = false;
-            AssetBundle[] elbundles = AssetBundle.GetAllLoadedAssetBundles().ToArray();
-            foreach (AssetBundle bundle in elbundles)
-            {
-                if (bundle.name == "bundle-0")
-                {
-                    CCE = bundle.LoadAsset<Shader>("Assets/Shaders/Special/ULTRAKILL-vertexlit-customcolors-emissive.shader");
-                    DE = bundle.LoadAsset<Shader>("Assets/Shaders/Main/ULTRAKILL-vertexlit-emissive.shader");
-                    cubemap = bundle.LoadAsset<Cubemap>("Assets/Textures/studio_06.exr");
-                    continue;
-                }
-            }
-            CreateSkinGUI();
+            if (CCE == null)
+			    CCE = Addressables.LoadAssetAsync<Shader>("Assets/Shaders/Special/ULTRAKILL-vertexlit-customcolors-emissive.shader").WaitForCompletion();
+			if (DE == null)
+                DE = Addressables.LoadAssetAsync<Shader>("Assets/Shaders/Main/ULTRAKILL-vertexlit-emissive.shader").WaitForCompletion();
+			if (cubemap == null)
+                cubemap = Addressables.LoadAssetAsync<Cubemap>("Assets/Textures/studio_06.exr").WaitForCompletion();
+			CreateSkinGUI();
 		}
 
         public void CreateSkinGUI()
@@ -290,14 +286,12 @@ namespace UltraSkins
                 ShopCategory[] SCs = shopGearChecker.GetComponentsInChildren<ShopCategory>(true);
                 GameObject PresetsMenu = Instantiate(shopGearChecker.transform.GetChild(3).GetComponent<ShopButton>().toActivate[0], shopGearChecker.transform);
                 PresetsMenu.name = "ultraskins window";
+                foreach (var varInfo in PresetsMenu.GetComponentsInChildren<VariationInfo>())
+                    GameObject.Destroy(varInfo);
                 PresetsMenu.SetActive(false);
                 foreach (ShopCategory SC in SCs)
                 {
-                    List<GameObject> deactivateobjects = new List<GameObject>();
-                    for (int s = 0; s < SC.GetComponent<ShopButton>().toDeactivate.Length; s++)
-                    {
-                        deactivateobjects.Add(SC.GetComponent<ShopButton>().toDeactivate[s]);
-                    }
+                    List<GameObject> deactivateobjects = SC.GetComponent<ShopButton>().toDeactivate.ToList();
                     deactivateobjects.Add(PresetsMenu);
                     SC.GetComponent<ShopButton>().toDeactivate = deactivateobjects.ToArray();
                 }
@@ -306,16 +300,12 @@ namespace UltraSkins
                 button.localPosition = new Vector3(-180f, -85f, -45f);
                 button.localScale = new Vector3(1f, 1f, 1f);
                 button.GetComponent<ShopButton>().toActivate = new GameObject[] { PresetsMenu };
-                button.GetComponent<ShopButton>().toDeactivate = new GameObject[]
-                {
-                    shopGearChecker.transform.GetChild(9).gameObject,
-                    shopGearChecker.transform.GetChild(10).gameObject,
-                    shopGearChecker.transform.GetChild(11).gameObject,
-                    shopGearChecker.transform.GetChild(12).gameObject,
-                    shopGearChecker.transform.GetChild(13).gameObject,
-                    shopGearChecker.transform.GetChild(14).gameObject
-                };
-                button.GetComponentInChildren<Text>().text = "ULTRASKINS";
+                List<GameObject> toDeactivate = SCs[0].GetComponent<ShopButton>().toDeactivate.ToList();
+                if (SCs[0].GetComponent<ShopButton>().toActivate.Length != 0)
+				    toDeactivate.Add(SCs[0].GetComponent<ShopButton>().toActivate[0]);
+                toDeactivate.Remove(PresetsMenu);
+                button.GetComponent<ShopButton>().toDeactivate = toDeactivate.ToArray();
+				button.GetComponentInChildren<Text>().text = "ULTRASKINS";
                 button.GetComponent<RectTransform>().SetAsFirstSibling();
                 for (int p = 2; p < PresetsMenu.transform.childCount; p++)
                 {
@@ -365,6 +355,7 @@ namespace UltraSkins
                     Destroy(FoldBut.transform.GetChild(2).gameObject);
                     Destroy(FoldBut.transform.GetChild(4).gameObject);
                     Destroy(FoldBut.transform.GetChild(5).gameObject);
+                    Destroy(FoldBut.GetComponent<VariationInfo>());
                     FoldBut.GetComponent<RectTransform>().sizeDelta = new Vector2(180, 80);
                     FoldBut.gameObject.name = (r == 1) ? "<<" : ">>";
                     FoldBut.GetComponentInChildren<Text>().text = (r == 1) ? "<<" : ">>";
@@ -388,6 +379,9 @@ namespace UltraSkins
 
         public static Texture ResolveTheTextureProperty(Material mat, string property, string propertyfallback = "_MainTex")
         {
+            if (mat != null && mat.mainTexture == null)
+                return null;
+
             string textureToResolve = "";
             if (mat && !mat.mainTexture.name.StartsWith("TNR_") && property != "_Cube")
             {
@@ -573,11 +567,11 @@ namespace UltraSkins
             }
 			else if (firsttime && serializedSet == "")
             {
-                Path.Combine(modFolder, "OG Textures");
+				path = Path.Combine(modFolder, "OG Textures");
             }
             if(path == "")
             {
-                Path.Combine(modFolder, "OG Textures");
+				path = Path.Combine(modFolder, "OG Textures");
             }
             InitOWGameObjects(firsttime);
 			return LoadTextures(path);
