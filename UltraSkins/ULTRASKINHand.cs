@@ -4,7 +4,9 @@ using System.IO;
 using System.Linq;
 using HarmonyLib;
 using UMM;
+using Unity.Audio;
 using UnityEngine;
+using UnityEngine.AddressableAssets;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -45,11 +47,10 @@ namespace UltraSkins
         [HarmonyPatch]
         public class HarmonyGunPatcher
         {
-            [HarmonyPatch(typeof(GunControl), "SwitchWeapon", new Type[] { typeof(int), typeof(List<GameObject>), typeof(bool), typeof(bool) })]
+            [HarmonyPatch(typeof(GunControl), "SwitchWeapon", new Type[] { typeof(int), typeof(List<GameObject>), typeof(bool), typeof(bool), typeof(bool) })]
             [HarmonyPostfix]
-            public static void SwitchWeaponPost(GunControl __instance, int target, List<GameObject> slot, bool lastUsed = false, bool scrolled = false)
+            public static void SwitchWeaponPost(GunControl __instance, int target, List<GameObject> slot, bool lastUsedSlot = false, bool useRetainedVariation = false, bool scrolled = false)
             {
-
                 TextureOverWatch[] TOWS = __instance.currentWeapon.GetComponentsInChildren<TextureOverWatch>(true);
                 ReloadTextureOverWatch(TOWS);
             }
@@ -267,18 +268,13 @@ namespace UltraSkins
 		private void SceneManagerOnsceneLoaded(Scene scene, LoadSceneMode mode)
 		{
 			swapped = false;
-            AssetBundle[] elbundles = AssetBundle.GetAllLoadedAssetBundles().ToArray();
-            foreach (AssetBundle bundle in elbundles)
-            {
-                if (bundle.name == "bundle-0")
-                {
-                    CCE = bundle.LoadAsset<Shader>("Assets/Shaders/Special/ULTRAKILL-vertexlit-customcolors-emissive.shader");
-                    DE = bundle.LoadAsset<Shader>("Assets/Shaders/Main/ULTRAKILL-vertexlit-emissive.shader");
-                    cubemap = bundle.LoadAsset<Cubemap>("Assets/Textures/studio_06.exr");
-                    continue;
-                }
-            }
-            CreateSkinGUI();
+            if (CCE == null)
+			    CCE = Addressables.LoadAssetAsync<Shader>("Assets/Shaders/Special/ULTRAKILL-vertexlit-customcolors-emissive.shader").WaitForCompletion();
+			if (DE == null)
+                DE = Addressables.LoadAssetAsync<Shader>("Assets/Shaders/Main/ULTRAKILL-vertexlit-emissive.shader").WaitForCompletion();
+			if (cubemap == null)
+                cubemap = Addressables.LoadAssetAsync<Cubemap>("Assets/Textures/studio_06.exr").WaitForCompletion();
+			CreateSkinGUI();
 		}
 
         public void CreateSkinGUI()
@@ -388,6 +384,9 @@ namespace UltraSkins
 
         public static Texture ResolveTheTextureProperty(Material mat, string property, string propertyfallback = "_MainTex")
         {
+            if (mat != null && mat.mainTexture == null)
+                return null;
+
             string textureToResolve = "";
             if (mat && !mat.mainTexture.name.StartsWith("TNR_") && property != "_Cube")
             {
@@ -573,11 +572,11 @@ namespace UltraSkins
             }
 			else if (firsttime && serializedSet == "")
             {
-                Path.Combine(modFolder, "OG Textures");
+				path = Path.Combine(modFolder, "OG Textures");
             }
             if(path == "")
             {
-                Path.Combine(modFolder, "OG Textures");
+				path = Path.Combine(modFolder, "OG Textures");
             }
             InitOWGameObjects(firsttime);
 			return LoadTextures(path);
