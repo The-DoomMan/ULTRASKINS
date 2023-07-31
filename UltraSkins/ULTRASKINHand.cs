@@ -286,14 +286,12 @@ namespace UltraSkins
                 ShopCategory[] SCs = shopGearChecker.GetComponentsInChildren<ShopCategory>(true);
                 GameObject PresetsMenu = Instantiate(shopGearChecker.transform.GetChild(3).GetComponent<ShopButton>().toActivate[0], shopGearChecker.transform);
                 PresetsMenu.name = "ultraskins window";
+                foreach (var varInfo in PresetsMenu.GetComponentsInChildren<VariationInfo>())
+                    GameObject.Destroy(varInfo);
                 PresetsMenu.SetActive(false);
                 foreach (ShopCategory SC in SCs)
                 {
-                    List<GameObject> deactivateobjects = new List<GameObject>();
-                    for (int s = 0; s < SC.GetComponent<ShopButton>().toDeactivate.Length; s++)
-                    {
-                        deactivateobjects.Add(SC.GetComponent<ShopButton>().toDeactivate[s]);
-                    }
+                    List<GameObject> deactivateobjects = SC.GetComponent<ShopButton>().toDeactivate.ToList();
                     deactivateobjects.Add(PresetsMenu);
                     SC.GetComponent<ShopButton>().toDeactivate = deactivateobjects.ToArray();
                 }
@@ -302,16 +300,12 @@ namespace UltraSkins
                 button.localPosition = new Vector3(-180f, -85f, -45f);
                 button.localScale = new Vector3(1f, 1f, 1f);
                 button.GetComponent<ShopButton>().toActivate = new GameObject[] { PresetsMenu };
-                button.GetComponent<ShopButton>().toDeactivate = new GameObject[]
-                {
-                    shopGearChecker.transform.GetChild(9).gameObject,
-                    shopGearChecker.transform.GetChild(10).gameObject,
-                    shopGearChecker.transform.GetChild(11).gameObject,
-                    shopGearChecker.transform.GetChild(12).gameObject,
-                    shopGearChecker.transform.GetChild(13).gameObject,
-                    shopGearChecker.transform.GetChild(14).gameObject
-                };
-                button.GetComponentInChildren<Text>().text = "ULTRASKINS";
+                List<GameObject> toDeactivate = SCs[0].GetComponent<ShopButton>().toDeactivate.ToList();
+                if (SCs[0].GetComponent<ShopButton>().toActivate.Length != 0)
+				    toDeactivate.Add(SCs[0].GetComponent<ShopButton>().toActivate[0]);
+                toDeactivate.Remove(PresetsMenu);
+                button.GetComponent<ShopButton>().toDeactivate = toDeactivate.ToArray();
+				button.GetComponentInChildren<Text>().text = "ULTRASKINS";
                 button.GetComponent<RectTransform>().SetAsFirstSibling();
                 for (int p = 2; p < PresetsMenu.transform.childCount; p++)
                 {
@@ -361,6 +355,7 @@ namespace UltraSkins
                     Destroy(FoldBut.transform.GetChild(2).gameObject);
                     Destroy(FoldBut.transform.GetChild(4).gameObject);
                     Destroy(FoldBut.transform.GetChild(5).gameObject);
+                    Destroy(FoldBut.GetComponent<VariationInfo>());
                     FoldBut.GetComponent<RectTransform>().sizeDelta = new Vector2(180, 80);
                     FoldBut.gameObject.name = (r == 1) ? "<<" : ">>";
                     FoldBut.GetComponentInChildren<Text>().text = (r == 1) ? "<<" : ">>";
